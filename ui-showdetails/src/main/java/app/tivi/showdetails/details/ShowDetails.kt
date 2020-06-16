@@ -27,7 +27,6 @@ import androidx.compose.remember
 import androidx.compose.setValue
 import androidx.compose.state
 import androidx.compose.staticAmbientOf
-import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.LiveData
 import androidx.ui.core.Alignment
 import androidx.ui.core.ContentScale
@@ -107,8 +106,11 @@ import app.tivi.common.compose.PopupMenuItem
 import app.tivi.common.compose.ProvideInsets
 import app.tivi.common.compose.TiviDateFormatterAmbient
 import app.tivi.common.compose.VectorImage
+import app.tivi.common.compose.VerticalSide
 import app.tivi.common.compose.offset
 import app.tivi.common.compose.onSizeChanged
+import app.tivi.common.compose.systemBarHeight
+import app.tivi.common.compose.systemBarsPadding
 import app.tivi.common.imageloading.TrimTransparentEdgesTransformation
 import app.tivi.data.entities.Episode
 import app.tivi.data.entities.ImageType
@@ -134,7 +136,6 @@ val ShowDetailsTextCreatorAmbient = staticAmbientOf<ShowDetailsTextCreator>()
 
 fun ViewGroup.composeShowDetails(
     state: LiveData<ShowDetailsViewState>,
-    insets: LiveData<WindowInsetsCompat?>,
     actioner: (ShowDetailsAction) -> Unit,
     tiviDateFormatter: TiviDateFormatter,
     textCreator: ShowDetailsTextCreator
@@ -146,7 +147,7 @@ fun ViewGroup.composeShowDetails(
         MaterialThemeFromMdcTheme {
             LogCompositions("MaterialThemeFromMdcTheme")
 
-            ProvideInsets(insets) {
+            ProvideInsets {
                 LogCompositions("ProvideInsets")
                 val viewState by state.observeAsState()
                 if (viewState != null) {
@@ -226,12 +227,11 @@ fun ShowDetails(
         )
     }
 
-    val insets = InsetsAmbient.current
-    val bottomInset = with(DensityAmbient.current) { insets.bottom.toDp() }
     ToggleShowFollowFloatingActionButton(
         isFollowed = viewState.isFollowed,
         onClick = { actioner(FollowShowToggleAction) },
-        modifier = Modifier.padding(end = 16.dp, bottom = 16.dp + bottomInset)
+        modifier = Modifier.padding(end = 16.dp, bottom = 16.dp)
+            .systemBarsPadding(bottom = true)
             .constrainAs(fab) {
                 end.linkTo(parent.end)
                 bottom.linkTo(parent.bottom)
@@ -365,11 +365,8 @@ private fun ShowDetailsScrollingContent(
                 }
 
                 // Spacer to push up the content from under the navigation bar
-                val insets = InsetsAmbient.current
-                val spacerHeight = with(DensityAmbient.current) {
-                    8.dp + insets.bottom.toDp() + 56.dp + 16.dp
-                }
-                Spacer(Modifier.preferredHeight(spacerHeight))
+                Spacer(Modifier.preferredHeight(8.dp + 56.dp + 16.dp))
+                Spacer(Modifier.systemBarHeight(VerticalSide.Bottom))
             }
         }
     }
@@ -384,8 +381,10 @@ private fun OverlaidStatusBarAppBar(
 ) {
     LogCompositions("OverlaidStatusBarAppBar")
 
-    val insets = InsetsAmbient.current
-    val trigger = (backdropHeight - insets.top).coerceAtLeast(0)
+    val systemBarTop = with(DensityAmbient.current) {
+        InsetsAmbient.current.systemBars.top.toPx()
+    }
+    val trigger = (backdropHeight - systemBarTop).coerceAtLeast(0f)
 
     val alpha = lerp(
         startValue = 0.5f,
@@ -399,10 +398,8 @@ private fun OverlaidStatusBarAppBar(
         modifier = modifier
     ) {
         Column(Modifier.fillMaxWidth()) {
-            if (insets.top > 0) {
-                val topInset = with(DensityAmbient.current) { insets.top.toDp() }
-                Spacer(Modifier.preferredHeight(topInset))
-            }
+            Spacer(Modifier.systemBarHeight(VerticalSide.Top))
+
             if (scrollerPosition >= trigger) {
                 appBar()
             }
