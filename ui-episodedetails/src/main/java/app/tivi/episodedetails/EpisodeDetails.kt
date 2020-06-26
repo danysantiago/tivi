@@ -95,8 +95,9 @@ import app.tivi.common.compose.SwipeToDismiss
 import app.tivi.common.compose.TiviAlertDialog
 import app.tivi.common.compose.TiviDateFormatterAmbient
 import app.tivi.common.compose.boundsInParent
+import app.tivi.common.compose.navigationBarHeight
+import app.tivi.common.compose.navigationBarPadding
 import app.tivi.common.compose.onPositionInParentChanged
-import app.tivi.common.compose.systemBarsPadding
 import app.tivi.data.entities.Episode
 import app.tivi.data.entities.EpisodeWatchEntry
 import app.tivi.data.entities.PendingAction
@@ -220,7 +221,7 @@ private fun EpisodeDetails(
                             )
                         }
 
-                        Spacer(Modifier.systemBarsPadding(bottom = true).preferredHeight(8.dp))
+                        Spacer(Modifier.navigationBarHeight().padding(top = 8.dp))
                     }
                 }
             }
@@ -229,7 +230,7 @@ private fun EpisodeDetails(
         Column(
             modifier = Modifier.fillMaxWidth()
                 .gravity(Alignment.BottomCenter)
-                .systemBarsPadding(bottom = true)
+                .navigationBarPadding()
                 .padding(bottom = 16.dp)
         ) {
             Crossfade(current = viewState.error) { error ->

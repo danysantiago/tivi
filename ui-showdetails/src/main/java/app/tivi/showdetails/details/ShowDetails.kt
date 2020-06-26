@@ -106,11 +106,11 @@ import app.tivi.common.compose.PopupMenuItem
 import app.tivi.common.compose.ProvideInsets
 import app.tivi.common.compose.TiviDateFormatterAmbient
 import app.tivi.common.compose.VectorImage
-import app.tivi.common.compose.VerticalSide
+import app.tivi.common.compose.navigationBarHeight
+import app.tivi.common.compose.navigationBarPadding
 import app.tivi.common.compose.offset
 import app.tivi.common.compose.onSizeChanged
-import app.tivi.common.compose.systemBarHeight
-import app.tivi.common.compose.systemBarsPadding
+import app.tivi.common.compose.statusBarHeight
 import app.tivi.common.imageloading.TrimTransparentEdgesTransformation
 import app.tivi.data.entities.Episode
 import app.tivi.data.entities.ImageType
@@ -231,7 +231,7 @@ fun ShowDetails(
         isFollowed = viewState.isFollowed,
         onClick = { actioner(FollowShowToggleAction) },
         modifier = Modifier.padding(end = 16.dp, bottom = 16.dp)
-            .systemBarsPadding(bottom = true)
+            .navigationBarPadding()
             .constrainAs(fab) {
                 end.linkTo(parent.end)
                 bottom.linkTo(parent.bottom)
@@ -366,7 +366,7 @@ private fun ShowDetailsScrollingContent(
 
                 // Spacer to push up the content from under the navigation bar
                 Spacer(Modifier.preferredHeight(8.dp + 56.dp + 16.dp))
-                Spacer(Modifier.systemBarHeight(VerticalSide.Bottom))
+                Spacer(Modifier.navigationBarHeight())
             }
         }
     }
@@ -387,7 +387,7 @@ private fun OverlaidStatusBarAppBar(
     val trigger = (backdropHeight - systemBarTop).coerceAtLeast(0f)
 
     val alpha = lerp(
-        startValue = 0.5f,
+        startValue = 0.4f,
         endValue = 1f,
         fraction = if (trigger > 0) (scrollerPosition / trigger).coerceIn(0f, 1f) else 0f
     )
@@ -398,7 +398,7 @@ private fun OverlaidStatusBarAppBar(
         modifier = modifier
     ) {
         Column(Modifier.fillMaxWidth()) {
-            Spacer(Modifier.systemBarHeight(VerticalSide.Top))
+            Spacer(Modifier.statusBarHeight())
 
             if (scrollerPosition >= trigger) {
                 appBar()
