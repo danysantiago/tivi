@@ -18,6 +18,7 @@
 
 package app.tivi.common.compose
 
+import android.view.View
 import androidx.compose.Composable
 import androidx.compose.Providers
 import androidx.compose.Stable
@@ -29,7 +30,6 @@ import androidx.compose.remember
 import androidx.compose.setValue
 import androidx.compose.staticAmbientOf
 import androidx.core.view.ViewCompat
-import androidx.core.view.doOnAttach
 import androidx.ui.core.DensityAmbient
 import androidx.ui.core.Modifier
 import androidx.ui.core.ViewAmbient
@@ -82,10 +82,25 @@ fun ProvideInsets(content: @Composable () -> Unit) {
             // Return the unconsumed insets
             windowInsets
         }
-        view.doOnAttach { it.requestApplyInsets() }
+
+        // Add an OnAttachStateChangeListener to request an inset pass each time we're attached
+        // to the window
+        val attachListener = object : View.OnAttachStateChangeListener {
+            override fun onViewAttachedToWindow(v: View) {
+                v.requestApplyInsets()
+            }
+
+            override fun onViewDetachedFromWindow(v: View) = Unit
+        }
+        view.addOnAttachStateChangeListener(attachListener)
+
+        if (view.isAttachedToWindow) {
+            // If the view is already attached, we can request an inset pass now
+            view.requestApplyInsets()
+        }
 
         onDispose {
-            ViewCompat.setOnApplyWindowInsetsListener(view, null)
+            view.removeOnAttachStateChangeListener(attachListener)
         }
     }
 
