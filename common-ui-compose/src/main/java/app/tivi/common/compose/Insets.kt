@@ -50,6 +50,7 @@ import kotlin.math.min
 @Stable
 class DisplayInsets {
     val systemBars = Insets()
+    val systemGestures = Insets()
 }
 
 @Stable
@@ -81,6 +82,7 @@ fun ProvideDisplayInsets(content: @Composable () -> Unit) {
     onCommit(view) {
         ViewCompat.setOnApplyWindowInsetsListener(view) { _, windowInsets ->
             displayInsets.systemBars.updateFrom(windowInsets.systemWindowInsets)
+            displayInsets.systemGestures.updateFrom(windowInsets.systemGestureInsets)
 
             // Return the unconsumed insets
             windowInsets
