@@ -186,9 +186,9 @@ private fun Insets.updateFrom(insets: androidx.core.graphics.Insets) {
  * }
  * ```
  *
- * It's also useful when used with `Box` to draw a scrim which matches the status bar:
+ * It's also useful when used to draw a scrim which matches the status bar:
  * ```
- * Box(
+ * Spacer(
  *     Modifier.statusBarHeight()
  *         .fillMaxWidth()
  *         .drawBackground(MaterialTheme.colors.background.copy(alpha = 0.3f)
@@ -216,9 +216,9 @@ fun Modifier.statusBarHeight() = composed {
  * }
  * ```
  *
- * It's also useful when used with `Box` to draw a scrim which matches the navigation bar:
+ * It's also useful when used to draw a scrim which matches the navigation bar:
  * ```
- * Box(
+ * Spacer(
  *     Modifier.navigationBarHeight()
  *         .fillMaxWidth()
  *         .drawBackground(MaterialTheme.colors.background.copy(alpha = 0.3f)
@@ -254,9 +254,9 @@ enum class VerticalSide { Top, Bottom }
  * }
  * ```
  *
- * It's also useful when used with `Box` to draw a scrim which matches the navigation bar:
+ * It's also useful when used to draw a scrim which matches the navigation bar:
  * ```
- * Box(
+ * Spacer(
  *     Modifier.navigationBarWidth(HorizontalSide.Left)
  *         .fillMaxHeight()
  *         .drawBackground(MaterialTheme.colors.background.copy(alpha = 0.3f)
