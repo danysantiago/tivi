@@ -381,10 +381,8 @@ private fun OverlaidStatusBarAppBar(
 ) {
     LogCompositions("OverlaidStatusBarAppBar")
 
-    val systemBarTop = with(DensityAmbient.current) {
-        InsetsAmbient.current.systemBars.top.toPx()
-    }
-    val trigger = (backdropHeight - systemBarTop).coerceAtLeast(0f)
+    val trigger = (backdropHeight - InsetsAmbient.current.systemBars.top)
+        .coerceAtLeast(0)
 
     val alpha = lerp(
         startValue = 0.4f,

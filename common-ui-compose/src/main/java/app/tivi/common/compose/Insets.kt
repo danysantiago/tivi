@@ -22,7 +22,6 @@ import android.view.View
 import androidx.compose.Composable
 import androidx.compose.Providers
 import androidx.compose.Stable
-import androidx.compose.StructurallyEqual
 import androidx.compose.getValue
 import androidx.compose.mutableStateOf
 import androidx.compose.onCommit
@@ -30,15 +29,22 @@ import androidx.compose.remember
 import androidx.compose.setValue
 import androidx.compose.staticAmbientOf
 import androidx.core.view.ViewCompat
-import androidx.ui.core.DensityAmbient
+import androidx.ui.core.Constraints
+import androidx.ui.core.IntrinsicMeasurable
+import androidx.ui.core.IntrinsicMeasureScope
+import androidx.ui.core.LayoutDirection
+import androidx.ui.core.LayoutModifier
+import androidx.ui.core.Measurable
+import androidx.ui.core.MeasureScope
 import androidx.ui.core.Modifier
 import androidx.ui.core.ViewAmbient
 import androidx.ui.core.composed
-import androidx.ui.layout.absolutePadding
+import androidx.ui.core.enforce
+import androidx.ui.core.offset
 import androidx.ui.layout.height
 import androidx.ui.layout.width
-import androidx.ui.unit.Density
-import androidx.ui.unit.dp
+import kotlin.math.max
+import kotlin.math.min
 
 /**
  * Main holder of our inset values.
@@ -50,13 +56,13 @@ class DisplayInsets {
 
 @Stable
 class Insets {
-    var left by mutableStateOf(0.dp, StructurallyEqual)
+    var left by mutableStateOf(0)
         internal set
-    var top by mutableStateOf(0.dp, StructurallyEqual)
+    var top by mutableStateOf(0)
         internal set
-    var right by mutableStateOf(0.dp, StructurallyEqual)
+    var right by mutableStateOf(0)
         internal set
-    var bottom by mutableStateOf(0.dp, StructurallyEqual)
+    var bottom by mutableStateOf(0)
         internal set
 
     /**
@@ -71,13 +77,12 @@ val InsetsAmbient = staticAmbientOf<DisplayInsets>()
 @Composable
 fun ProvideDisplayInsets(content: @Composable () -> Unit) {
     val view = ViewAmbient.current
-    val density = DensityAmbient.current
 
     val displayInsets = remember { DisplayInsets() }
 
     onCommit(view) {
         ViewCompat.setOnApplyWindowInsetsListener(view) { _, windowInsets ->
-            displayInsets.systemBars.updateFrom(windowInsets.systemWindowInsets, density)
+            displayInsets.systemBars.updateFrom(windowInsets.systemWindowInsets)
 
             // Return the unconsumed insets
             windowInsets
@@ -168,24 +173,21 @@ private inline fun Modifier.insetsPadding(
     top: Boolean = false,
     right: Boolean = false,
     bottom: Boolean = false
-) = absolutePadding(
-    left = if (left) insets.left else 0.dp,
-    top = if (top) insets.top else 0.dp,
-    right = if (right) insets.right else 0.dp,
-    bottom = if (bottom) insets.bottom else 0.dp
+) = absolutePaddingPx(
+    left = if (left) insets.left else 0,
+    top = if (top) insets.top else 0,
+    right = if (right) insets.right else 0,
+    bottom = if (bottom) insets.bottom else 0
 )
 
 /**
  * Updates our mutable state backed [Insets] from an Android system insets.
  */
-private fun Insets.updateFrom(
-    insets: androidx.core.graphics.Insets,
-    density: Density
-) = with(density) {
-    left = insets.left.toDp()
-    top = insets.top.toDp()
-    right = insets.right.toDp()
-    bottom = insets.bottom.toDp()
+private fun Insets.updateFrom(insets: androidx.core.graphics.Insets) {
+    left = insets.left
+    top = insets.top
+    right = insets.right
+    bottom = insets.bottom
 }
 
 /**
@@ -217,7 +219,7 @@ fun Modifier.statusBarHeight() = composed {
     // It currently assumes that status bar == top which is probably fine, but doesn't work
     // in multi-window, etc.
     val insets = InsetsAmbient.current
-    Modifier.height(insets.systemBars.top)
+    Modifier.heightPx(insets.systemBars.top)
 }
 
 /**
@@ -248,7 +250,7 @@ fun Modifier.navigationBarHeight() = composed {
     // It currently assumes that nav bar == bottom, which is wrong in landscape.
     // It also doesn't handle the IME correctly.
     val insets = InsetsAmbient.current
-    Modifier.height(insets.systemBars.bottom)
+    Modifier.heightPx(insets.systemBars.bottom)
 }
 
 enum class HorizontalSide { Left, Right }
@@ -288,7 +290,176 @@ fun Modifier.navigationBarWidth(side: HorizontalSide) = composed {
     // It currently assumes that nav bar == left/right
     val insets = InsetsAmbient.current
     when (side) {
-        HorizontalSide.Left -> Modifier.width(insets.systemBars.left)
-        HorizontalSide.Right -> Modifier.width(insets.systemBars.right)
+        HorizontalSide.Left -> Modifier.widthPx(insets.systemBars.left)
+        HorizontalSide.Right -> Modifier.widthPx(insets.systemBars.right)
+    }
+}
+
+fun Modifier.absolutePaddingPx(
+    left: Int = 0,
+    top: Int = 0,
+    right: Int = 0,
+    bottom: Int = 0
+) = this + PaddingPxModifier(
+    start = left,
+    top = top,
+    end = right,
+    bottom = bottom,
+    rtlAware = false
+)
+
+fun Modifier.paddingPx(
+    start: Int = 0,
+    top: Int = 0,
+    end: Int = 0,
+    bottom: Int = 0
+) = this + PaddingPxModifier(
+    start = start,
+    top = top,
+    end = end,
+    bottom = bottom,
+    rtlAware = true
+)
+
+private data class PaddingPxModifier(
+    val start: Int = 0,
+    val top: Int = 0,
+    val end: Int = 0,
+    val bottom: Int = 0,
+    val rtlAware: Boolean
+) : LayoutModifier {
+    init {
+        require(start >= 0 && top >= 0 && end >= 0 && bottom >= 0) {
+            "Padding must be non-negative"
+        }
+    }
+
+    override fun MeasureScope.measure(
+        measurable: Measurable,
+        constraints: Constraints,
+        layoutDirection: LayoutDirection
+    ): MeasureScope.MeasureResult {
+        val horizontal = start + end
+        val vertical = top + bottom
+
+        val placeable = measurable.measure(constraints.offset(-horizontal, -vertical))
+
+        val width = (placeable.width + horizontal)
+            .coerceIn(constraints.minWidth, constraints.maxWidth)
+        val height = (placeable.height + vertical)
+            .coerceIn(constraints.minHeight, constraints.maxHeight)
+        return layout(width, height) {
+            if (rtlAware) {
+                placeable.place(start, top)
+            } else {
+                placeable.placeAbsolute(start, top)
+            }
+        }
+    }
+}
+
+fun Modifier.heightPx(height: Int) = sizeInPx(minHeight = height, maxHeight = height)
+
+fun Modifier.widthPx(width: Int) = sizeInPx(minWidth = width, maxWidth = width)
+
+fun Modifier.sizeInPx(
+    minWidth: Int = Int.MIN_VALUE,
+    minHeight: Int = Int.MIN_VALUE,
+    maxWidth: Int = Int.MAX_VALUE,
+    maxHeight: Int = Int.MAX_VALUE
+) = this + SizePxModifier(minWidth, minHeight, maxWidth, maxHeight, false)
+
+private data class SizePxModifier(
+    private val minWidth: Int = Int.MIN_VALUE,
+    private val minHeight: Int = Int.MIN_VALUE,
+    private val maxWidth: Int = Int.MAX_VALUE,
+    private val maxHeight: Int = Int.MAX_VALUE,
+    private val enforceIncoming: Boolean
+) : LayoutModifier {
+    private val targetConstraints
+        get() = Constraints(
+            minWidth = minWidth.coerceAtLeast(0),
+            minHeight = minHeight.coerceAtLeast(0),
+            maxWidth = maxWidth.coerceAtLeast(0),
+            maxHeight = maxHeight.coerceAtLeast(0)
+        )
+
+    override fun MeasureScope.measure(
+        measurable: Measurable,
+        constraints: Constraints,
+        layoutDirection: LayoutDirection
+    ): MeasureScope.MeasureResult {
+        val wrappedConstraints = targetConstraints.let { targetConstraints ->
+            if (enforceIncoming) {
+                targetConstraints.enforce(constraints)
+            } else {
+                val resolvedMinWidth = if (minWidth >= 0) {
+                    targetConstraints.minWidth
+                } else {
+                    min(constraints.minWidth, targetConstraints.maxWidth)
+                }
+                val resolvedMaxWidth = if (maxWidth != Integer.MAX_VALUE) {
+                    targetConstraints.maxWidth
+                } else {
+                    max(constraints.maxWidth, targetConstraints.minWidth)
+                }
+                val resolvedMinHeight = if (minHeight >= 0) {
+                    targetConstraints.minHeight
+                } else {
+                    min(constraints.minHeight, targetConstraints.maxHeight)
+                }
+                val resolvedMaxHeight = if (maxHeight != Integer.MAX_VALUE) {
+                    targetConstraints.maxHeight
+                } else {
+                    max(constraints.maxHeight, targetConstraints.minHeight)
+                }
+                Constraints(
+                    resolvedMinWidth,
+                    resolvedMaxWidth,
+                    resolvedMinHeight,
+                    resolvedMaxHeight
+                )
+            }
+        }
+        val placeable = measurable.measure(wrappedConstraints)
+        return layout(placeable.width, placeable.height) {
+            placeable.place(0, 0)
+        }
+    }
+
+    override fun IntrinsicMeasureScope.minIntrinsicWidth(
+        measurable: IntrinsicMeasurable,
+        height: Int,
+        layoutDirection: LayoutDirection
+    ) = measurable.minIntrinsicWidth(height, layoutDirection).let {
+        val constraints = targetConstraints
+        it.coerceIn(constraints.minWidth, constraints.maxWidth)
+    }
+
+    override fun IntrinsicMeasureScope.maxIntrinsicWidth(
+        measurable: IntrinsicMeasurable,
+        height: Int,
+        layoutDirection: LayoutDirection
+    ) = measurable.maxIntrinsicWidth(height, layoutDirection).let {
+        val constraints = targetConstraints
+        it.coerceIn(constraints.minWidth, constraints.maxWidth)
+    }
+
+    override fun IntrinsicMeasureScope.minIntrinsicHeight(
+        measurable: IntrinsicMeasurable,
+        width: Int,
+        layoutDirection: LayoutDirection
+    ) = measurable.minIntrinsicHeight(width, layoutDirection).let {
+        val constraints = targetConstraints
+        it.coerceIn(constraints.minHeight, constraints.maxHeight)
+    }
+
+    override fun IntrinsicMeasureScope.maxIntrinsicHeight(
+        measurable: IntrinsicMeasurable,
+        width: Int,
+        layoutDirection: LayoutDirection
+    ) = measurable.maxIntrinsicHeight(width, layoutDirection).let {
+        val constraints = targetConstraints
+        it.coerceIn(constraints.minHeight, constraints.maxHeight)
     }
 }
