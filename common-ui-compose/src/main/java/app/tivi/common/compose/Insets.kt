@@ -373,7 +373,7 @@ private data class InsetsSizeModifier(
         }
         val placeable = measurable.measure(wrappedConstraints)
         return layout(placeable.width, placeable.height) {
-            placeable.place(0, 0)
+            placeable.placeAbsolute(0, 0)
         }
     }
 
