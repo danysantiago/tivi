@@ -31,7 +31,6 @@ import androidx.lifecycle.LiveData
 import androidx.ui.core.Alignment
 import androidx.ui.core.ContentScale
 import androidx.ui.core.ContextAmbient
-import androidx.ui.core.DensityAmbient
 import androidx.ui.core.Modifier
 import androidx.ui.core.clip
 import androidx.ui.core.setContent
