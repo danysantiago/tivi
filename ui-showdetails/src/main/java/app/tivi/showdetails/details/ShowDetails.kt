@@ -103,7 +103,7 @@ import app.tivi.common.compose.InsetsAmbient
 import app.tivi.common.compose.LogCompositions
 import app.tivi.common.compose.PopupMenu
 import app.tivi.common.compose.PopupMenuItem
-import app.tivi.common.compose.ProvideInsets
+import app.tivi.common.compose.ProvideDisplayInsets
 import app.tivi.common.compose.TiviDateFormatterAmbient
 import app.tivi.common.compose.VectorImage
 import app.tivi.common.compose.navigationBarHeight
@@ -147,7 +147,7 @@ fun ViewGroup.composeShowDetails(
         MaterialThemeFromMdcTheme {
             LogCompositions("MaterialThemeFromMdcTheme")
 
-            ProvideInsets {
+            ProvideDisplayInsets {
                 LogCompositions("ProvideInsets")
                 val viewState by state.observeAsState()
                 if (viewState != null) {

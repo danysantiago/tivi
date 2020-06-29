@@ -89,7 +89,7 @@ import androidx.ui.unit.dp
 import app.tivi.animation.invoke
 import app.tivi.common.compose.AutoSizedCircularProgressIndicator
 import app.tivi.common.compose.ExpandingText
-import app.tivi.common.compose.ProvideInsets
+import app.tivi.common.compose.ProvideDisplayInsets
 import app.tivi.common.compose.SwipeDirection
 import app.tivi.common.compose.SwipeToDismiss
 import app.tivi.common.compose.TiviAlertDialog
@@ -123,7 +123,7 @@ fun ViewGroup.composeEpisodeDetails(
 ): Any = setContent(Recomposer.current()) {
     MaterialThemeFromMdcTheme {
         Providers(TiviDateFormatterAmbient provides tiviDateFormatter) {
-            ProvideInsets {
+            ProvideDisplayInsets {
                 val viewState by state.observeAsState()
                 if (viewState != null) {
                     EpisodeDetails(viewState!!, actioner)

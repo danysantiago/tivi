@@ -69,7 +69,7 @@ class Insets {
 val InsetsAmbient = staticAmbientOf<DisplayInsets>()
 
 @Composable
-fun ProvideInsets(content: @Composable () -> Unit) {
+fun ProvideDisplayInsets(content: @Composable () -> Unit) {
     val view = ViewAmbient.current
     val density = DensityAmbient.current
 

@@ -51,7 +51,7 @@ import androidx.ui.material.icons.filled.Settings
 import androidx.ui.res.stringResource
 import androidx.ui.tooling.preview.Preview
 import androidx.ui.unit.dp
-import app.tivi.common.compose.ProvideInsets
+import app.tivi.common.compose.ProvideDisplayInsets
 import app.tivi.common.compose.TiviDateFormatterAmbient
 import app.tivi.common.compose.VectorImage
 import app.tivi.data.entities.TraktUser
@@ -70,7 +70,7 @@ fun composeAccountUi(
 ): Any = viewGroup.setContent(Recomposer.current()) {
     MaterialThemeFromMdcTheme {
         Providers(TiviDateFormatterAmbient provides tiviDateFormatter) {
-            ProvideInsets {
+            ProvideDisplayInsets {
                 val viewState by state.observeAsState()
                 if (viewState != null) {
                     AccountUi(viewState!!, actioner)
